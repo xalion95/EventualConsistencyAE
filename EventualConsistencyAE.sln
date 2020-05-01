@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventualConsistencyAE", "EventualConsistencyAE\EventualConsistencyAE.csproj", "{01BEA82A-EFEB-47A7-8582-ED082C5981CC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Service", "Service\Service.csproj", "{D37327D7-988E-4CEA-A7F9-16A07565DF00}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{01BEA82A-EFEB-47A7-8582-ED082C5981CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{01BEA82A-EFEB-47A7-8582-ED082C5981CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{01BEA82A-EFEB-47A7-8582-ED082C5981CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D37327D7-988E-4CEA-A7F9-16A07565DF00}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D37327D7-988E-4CEA-A7F9-16A07565DF00}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D37327D7-988E-4CEA-A7F9-16A07565DF00}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D37327D7-988E-4CEA-A7F9-16A07565DF00}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

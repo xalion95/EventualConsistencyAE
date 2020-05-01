@@ -6,14 +6,68 @@
         xmlns:local="clr-namespace:EventualConsistencyAE"
         mc:Ignorable="d"
         x:Name="_this"
-        Title="MainWindow" Height="350" Width="525">
+        Title="MainWindow" Height="600" Width="800" MinHeight="350" MinWidth="525"
+        Closing="MainWindow_OnClosing">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+        <TabControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <TabItem Header="Połączenie">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30" />
+                        <RowDefinition Height="30" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
-        <Button x:Name="ConnectButton" Grid.Column="0">Connect with others</Button>
-        <ListView Grid.Column="1" x:Name="ListViewConnectedServers" />
+                    <Button x:Name="ConnectButton" Grid.Row="0" Click="ConnectButton_OnClick" Content="Połącz" HorizontalAlignment="Left" Width="80" />
+                    <TextBlock Grid.Row="1">Lista połączonych serwerów</TextBlock>
+                    <ListView Grid.Row="2" x:Name="ListViewConnectedServers" />
+                </Grid>
+            </TabItem>
+            <TabItem Header="Dane">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="90" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <GroupBox Header="Dodaj nową osobę">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0">Id</TextBlock>
+                            <TextBlock Grid.Row="0" Grid.Column="1">Imię</TextBlock>
+
+                            <TextBox Grid.Row="1" Grid.Column="0" x:Name="IdField" />
+                            <TextBox Grid.Row="1" Grid.Column="1" x:Name="NameField" />
+
+                            <Button Grid.Row="1" Grid.Column="2" x:Name="AddPersonButton" Click="AddPersonButton_OnClick">Dodaj</Button>
+                        </Grid>
+                    </GroupBox>
+
+                    <ListView Grid.Column="0" Grid.Row="1" x:Name="ListViewPersonData">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Id" Width="100" DisplayMemberBinding="{Binding Id}" />
+                                <GridViewColumn Header="Imię" Width="250" DisplayMemberBinding="{Binding Name}" />
+                                <GridViewColumn Header="Usuń" Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Content="X" Width="60" Click="DeletePerson_OnClick"></Button>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Window>

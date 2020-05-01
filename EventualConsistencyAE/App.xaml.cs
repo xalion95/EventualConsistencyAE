@@ -12,7 +12,7 @@ namespace EventualConsistencyAE
         {
             var port = 50000;
             var startPort = 50000;
-            var endPort = 50010;
+            var endPort = 50002;
 
             if (e.Args.Length > 2)
             {
