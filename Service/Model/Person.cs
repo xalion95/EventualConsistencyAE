@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Service.Model
+﻿namespace Service.Model
 {
     public class Person
     {

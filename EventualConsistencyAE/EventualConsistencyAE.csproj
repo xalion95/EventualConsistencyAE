@@ -52,6 +52,7 @@
             <Generator>MSBuild:Compile</Generator>
             <SubType>Designer</SubType>
         </ApplicationDefinition>
+        <Compile Include="Properties\Annotations.cs" />
         <Compile Include="Web\Client.cs" />
         <Compile Include="Web\ClientCollection.cs" />
         <Compile Include="Web\Server.cs" />
@@ -84,9 +85,6 @@
     </ItemGroup>
     <ItemGroup>
         <None Include="App.config" />
-    </ItemGroup>
-    <ItemGroup>
-        <Content Include="StartScript.bat" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\Service\Service.csproj">

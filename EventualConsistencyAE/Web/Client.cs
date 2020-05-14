@@ -8,8 +8,8 @@ namespace EventualConsistencyAE.Web
 {
     public class Client : IEAServiceCallback
     {
-        public int ClientId { get; set; }
         public IEAService Channel { get; }
+        public int ServerPort { get; }
 
         #region Events
 
@@ -27,6 +27,8 @@ namespace EventualConsistencyAE.Web
         {
             try
             {
+                ServerPort = serverPort;
+
                 var timeSpan = new TimeSpan(0, 0, 15);
                 var serverUrl = $@"http://localhost:{serverPort}/IEAService";
                 var binding = new WSDualHttpBinding

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
@@ -11,20 +10,15 @@ namespace Service.Api
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single)]
     public class EAService : IEAService
     {
-        #region Events
-
-        public delegate void ClientListHandler(object sender, List<ConnectedClient> clients);
-
-        public event ClientListHandler ConnectedClient;
-
-        #endregion
-
         private readonly List<ConnectedClient> _clients = new List<ConnectedClient>();
         private readonly Timer _timer;
         public List<Person> Persons { get; } = new List<Person>();
+        public int ServerId { get; }
 
-        public EAService()
+        public EAService(int serverId)
         {
+            ServerId = serverId;
+
             _timer = new Timer
             {
                 AutoReset = true,
@@ -70,19 +64,13 @@ namespace Service.Api
             if (_clients.Contains(client)) return;
 
             _clients.Add(client);
-
-            ConnectedClient?.Invoke(this, _clients);
         }
 
         public void Disconnect()
         {
             var currentContext = OperationContext.Current;
             var callback = currentContext.GetCallbackChannel<IEAServiceCallback>();
-            var result = _clients.RemoveAll(c => c.Callback == callback);
-
-            if (result <= 0) return;
-
-            ConnectedClient?.Invoke(this, _clients);
+            _clients.RemoveAll(c => c.Callback == callback);
         }
 
         #endregion

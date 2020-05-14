@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.ServiceModel;
 using System.ServiceModel.Description;
@@ -8,33 +9,48 @@ using Service.Model;
 
 namespace EventualConsistencyAE.Web
 {
-    public class Server
+    public class Server : INotifyPropertyChanged
     {
         #region Events
 
         public delegate void UpdateListHandler(object sender, List<Person> persons);
 
         public event UpdateListHandler UpdateList;
+        public event PropertyChangedEventHandler PropertyChanged;
 
         #endregion
 
         private static readonly object Locker = new object();
-        private readonly ServiceHost _serviceHost;
+        private ServiceHost _serviceHost;
+        public ClientCollection Clients { get; }
+
         public EAService Service { get; }
+        public int Port { get; }
 
-        private readonly ClientCollection _clientCollection;
+        private bool _isRunning;
 
-        public Server(int port)
+        public bool IsRunning
         {
-            _clientCollection = new ClientCollection();
-            _clientCollection.ServerSynchronize += Synchronize;
+            get => _isRunning;
+            set
+            {
+                _isRunning = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsRunning)));
+            }
+        }
+
+        public Server(int port, int serverId)
+        {
+            Port = port;
+
+            Clients = new ClientCollection();
+            Clients.ServerSynchronize += Synchronize;
 
             var binding = new WSDualHttpBinding();
             var smb = new ServiceMetadataBehavior {HttpGetEnabled = true};
-            Service = new EAService();
+            Service = new EAService(serverId);
 
-
-            _serviceHost = new ServiceHost(Service, new Uri($"http://localhost:{port}"));
+            _serviceHost = new ServiceHost(Service, new Uri($@"http://localhost:{Port}"));
             _serviceHost.Description.Behaviors.Add(smb);
             _serviceHost.AddServiceEndpoint(typeof(IEAService), binding, "IEAService");
         }
@@ -59,18 +75,33 @@ namespace EventualConsistencyAE.Web
 
         public void AddClient(int port)
         {
-            _clientCollection.AddClient(port);
+            Clients.AddClient(port);
         }
 
         public void Start()
         {
-            _serviceHost.Open();
+            if (_serviceHost.State != CommunicationState.Closed)
+            {
+                _serviceHost.Open();
+            }
+            else
+            {
+                var binding = new WSDualHttpBinding();
+                var smb = new ServiceMetadataBehavior {HttpGetEnabled = true};
+
+                _serviceHost = new ServiceHost(Service, new Uri($"http://localhost:{Port}"));
+                _serviceHost.Description.Behaviors.Add(smb);
+                _serviceHost.AddServiceEndpoint(typeof(IEAService), binding, "IEAService");
+            }
+
+            IsRunning = true;
         }
 
         public void Stop()
         {
-            _clientCollection.DisconnectAll();
-            Service.Stop();
+            Clients.DisconnectAll();
+            _serviceHost.Close();
+            IsRunning = false;
         }
     }
 }
