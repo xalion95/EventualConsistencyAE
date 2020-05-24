@@ -24,7 +24,7 @@ namespace Service.Api
             var timer = new Timer
             {
                 AutoReset = true,
-                Interval = 30 * 1000,
+                Interval = 5 * 1000,
                 // Enabled = true
             };
             timer.Elapsed += (sender, args) =>

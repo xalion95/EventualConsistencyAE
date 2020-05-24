@@ -9,7 +9,8 @@
         Title="MainWindow" Height="600" Width="800" MinHeight="350" MinWidth="525"
         Closing="MainWindow_OnClosing">
     <Grid>
-        <TabControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SelectionChanged="TabView_OnSelectionChanged" >
+        <TabControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                    SelectionChanged="TabView_OnSelectionChanged">
             <TabItem Header="Połączenie">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -23,15 +24,19 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Orientation="Horizontal">
-                        <Button Click="StartServers_OnClick" Content="Włącz serwery" HorizontalAlignment="Left" Width="Auto" Margin="10, 10, 0, 0" Padding="5, 0, 5, 0" />
-                        <Button Click="DisconnectServers_OnClick" Content="Wyłącz serwery" HorizontalAlignment="Left" Width="Auto" Margin="10, 10, 0, 0" Padding="5, 0, 5, 0" />
-                        <Button Click="Connect_OnClick" Content="Połącz ze sobą serwery" HorizontalAlignment="Left" Width="Auto" Margin="10, 10, 0, 0" Padding="5, 0, 5, 0" />
+                        <Button Click="StartServers_OnClick" Content="Włącz serwery" HorizontalAlignment="Left"
+                                Width="Auto" Margin="10, 10, 0, 0" Padding="5, 0, 5, 0" />
+                        <Button Click="DisconnectServers_OnClick" Content="Wyłącz serwery" HorizontalAlignment="Left"
+                                Width="Auto" Margin="10, 10, 0, 0" Padding="5, 0, 5, 0" />
+                        <Button Click="Connect_OnClick" Content="Połącz ze sobą serwery" HorizontalAlignment="Left"
+                                Width="Auto" Margin="10, 10, 0, 0" Padding="5, 0, 5, 0" />
                     </StackPanel>
 
                     <TextBlock Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">Lista serwerów</TextBlock>
                     <TextBlock Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">Połączenia</TextBlock>
 
-                    <ListView Grid.Row="2" Grid.Column="0" x:Name="ListViewServers" SelectionChanged="Servers_OnSelectionChanged">
+                    <ListView Grid.Row="2" Grid.Column="0" x:Name="ListViewServers"
+                              SelectionChanged="Servers_OnSelectionChanged">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="Port" Width="200" DisplayMemberBinding="{Binding Port}" />
@@ -63,7 +68,8 @@
                                 <GridViewColumn Header="Akcja" Width="150">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Button Width="Auto" Click="ToggleServer_OnClick" Content="Zamknij połączenie" Padding="5 0 5 0" />
+                                            <Button Width="Auto" Click="ToggleServer_OnClick"
+                                                    Content="Zamknij połączenie" Padding="5 0 5 0" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
@@ -87,19 +93,31 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Grid.Column="0">Id</TextBlock>
-                            <TextBlock Grid.Row="0" Grid.Column="1">Imię</TextBlock>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Margin="10, 10, -10, 0">Id</TextBlock>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Margin="10, 10, -10, 0">Imię</TextBlock>
+                            <TextBlock Grid.Row="0" Grid.Column="2" Margin="10, 10, -10, 0">Serwer</TextBlock>
 
-                            <TextBox Grid.Row="1" Grid.Column="0" x:Name="IdField" />
-                            <TextBox Grid.Row="1" Grid.Column="1" x:Name="NameField" />
+                            <TextBox Grid.Row="1" Grid.Column="0" Margin="10, 10, 0, 0" x:Name="IdField" />
+                            <TextBox Grid.Row="1" Grid.Column="1" Margin="10, 10, 0, 0" x:Name="NameField" />
 
-                            <Button Grid.Row="1" Grid.Column="2" x:Name="AddPersonButton" Click="AddPersonButton_OnClick">Dodaj</Button>
+                            <ComboBox Grid.Row="1" Grid.Column="2" Margin="10, 10, 0, 0"
+                                      x:Name="SelectedServerComboBox"
+                                      ItemsSource="{Binding Servers}"
+                                      SelectedValue="{Binding SelectedServer.Port}"
+                                      SelectedItem="{Binding SelectedServer}"
+                                      DisplayMemberPath="Port" SelectedValuePath="Port"/>
+
+                            <Button Grid.Row="1" Grid.Column="3" Margin="10, 10, 0, 0" x:Name="AddPersonButton"
+                                    Click="AddPersonButton_OnClick">
+                                Dodaj
+                            </Button>
                         </Grid>
                     </GroupBox>
 
@@ -108,6 +126,7 @@
                             <GridView>
                                 <GridViewColumn Header="Id" Width="100" DisplayMemberBinding="{Binding Id}" />
                                 <GridViewColumn Header="Imię" Width="250" DisplayMemberBinding="{Binding Name}" />
+                                <GridViewColumn Header="Serwer" Width="250"/> <!-- #todo -->
                                 <GridViewColumn Header="Usuń" Width="100">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>

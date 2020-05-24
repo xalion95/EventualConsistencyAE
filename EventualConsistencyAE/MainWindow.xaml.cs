@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,17 +17,21 @@ namespace EventualConsistencyAE
     /// </summary>
     public partial class MainWindow
     {
-        private readonly List<Server> _servers = new List<Server>();
+        public ObservableCollection<Server> Servers { get; } = new ObservableCollection<Server>();
+        
+        public Server SelectedServer { get; } = null;
 
         public MainWindow()
         {
             InitializeComponent();
+            
+            DataContext = this;
 
             for (var i = 0; i < 11; i++)
             {
                 var server = new Server(i + 60_000);
                 server.UpdateList += UpdateList;
-                _servers.Add(server);
+                Servers.Add(server);
 
                 ListViewServers.Items.Add(server);
             }
@@ -43,7 +48,7 @@ namespace EventualConsistencyAE
                 server.Start();
                 ListViewServerConnections.Items.Clear();
 
-                foreach (var clientServer in _servers
+                foreach (var clientServer in Servers
                     .Where(clientServer => clientServer != server &&
                                            clientServer.IsRunning &&
                                            server.Service.Clients.All(client => client.Port != clientServer.Port)))
@@ -63,12 +68,12 @@ namespace EventualConsistencyAE
 
         private void StartServers_OnClick(object sender, RoutedEventArgs e)
         {
-            _servers.Where(server => !server.IsRunning).ToList().ForEach(server => server.Start());
+            Servers.Where(server => !server.IsRunning).ToList().ForEach(server => server.Start());
         }
         
         private void DisconnectServers_OnClick(object sender, RoutedEventArgs e)
         {
-            _servers.Where(server => server.IsRunning).ToList().ForEach(server =>
+            Servers.Where(server => server.IsRunning).ToList().ForEach(server =>
             {
                 server.IsRunning = false;
                 server.Service.DisconnectWithAllClients();
@@ -78,9 +83,9 @@ namespace EventualConsistencyAE
 
         private void Connect_OnClick(object sender, RoutedEventArgs e)
         {
-            foreach (var server in _servers.Where(server => server.IsRunning))
+            foreach (var server in Servers.Where(server => server.IsRunning))
             {
-                foreach (var clientServer in _servers
+                foreach (var clientServer in Servers
                     .Where(clientServer => server != clientServer && clientServer.IsRunning))
                 {
                     server.AddClient(clientServer.Port);
@@ -102,7 +107,7 @@ namespace EventualConsistencyAE
 
         private void MainWindow_OnClosing(object sender, CancelEventArgs e)
         {
-            Parallel.ForEach(_servers, new ParallelOptions {MaxDegreeOfParallelism = 32}, server => server.Stop());
+            Parallel.ForEach(Servers, new ParallelOptions {MaxDegreeOfParallelism = 32}, server => server.Stop());
         }
 
         private void DeletePerson_OnClick(object sender, RoutedEventArgs e)
@@ -121,13 +126,13 @@ namespace EventualConsistencyAE
 
         private void AddPersonButton_OnClick(object sender, RoutedEventArgs e)
         {
-            // var person = new Person
-            // {
-            //     Id = int.Parse(IdField.Text),
-            //     Name = NameField.Text
-            // };
-            // _server.Service.AddPerson(person.Id, person.Name);
-            // ListViewPersonData.Items.Add(person);
+            var person = new Person
+            {
+                Id = int.Parse(IdField.Text),
+                Name = NameField.Text
+            };
+            SelectedServer.Service.AddPerson(person.Id, person.Name);
+            ListViewPersonData.Items.Add(person);
         }
 
         private void Servers_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -148,7 +153,7 @@ namespace EventualConsistencyAE
 
             if (!Equals(tab, ConnectionMapTabItem)) return;
 
-            ConnectionMap.Dispatcher?.Invoke(() => DrawHelper.DrawConnectionMap(ConnectionMap, _servers),
+            ConnectionMap.Dispatcher?.Invoke(() => DrawHelper.DrawConnectionMap(ConnectionMap, Servers.ToList()),
                 DispatcherPriority.Loaded);
         }
 
