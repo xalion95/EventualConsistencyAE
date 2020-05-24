@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
-using System.ServiceModel.Channels;
 using System.Timers;
 using Service.Model;
 
@@ -10,28 +10,30 @@ namespace Service.Api
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single)]
     public class EAService : IEAService
     {
-        private readonly List<ConnectedClient> _clients = new List<ConnectedClient>();
-        private readonly Timer _timer;
+        private readonly object _locker = new object();
+        public List<ConnectedClient> Clients { get; } = new List<ConnectedClient>();
+
         public List<Person> Persons { get; } = new List<Person>();
-        public int ServerId { get; }
+        public int Port { get; }
 
-        public EAService(int serverId)
+
+        public EAService(int port)
         {
-            ServerId = serverId;
+            Port = port;
 
-            _timer = new Timer
+            var timer = new Timer
             {
                 AutoReset = true,
                 Interval = 30 * 1000,
-                Enabled = true
+                // Enabled = true
             };
-            _timer.Elapsed += (sender, args) =>
+            timer.Elapsed += (sender, args) =>
             {
                 var updatedPersons = Persons.Where(person => person.Status != Status.SYNCHRONIZED).ToList();
 
                 if (updatedPersons.Count == 0) return;
 
-                _clients.AsParallel().ForAll(client => client.Callback.Synchronize(updatedPersons));
+                Clients.AsParallel().ForAll(client => client.Channel.AddPersons(updatedPersons));
 
                 foreach (var person in updatedPersons.Where(person => person.Status == Status.NEW))
                 {
@@ -44,36 +46,47 @@ namespace Service.Api
 
         #region IEAService interface
 
-        public void Connect()
+        public void Connect(int clientPort)
         {
             var currentContext = OperationContext.Current;
-            var callback = currentContext.GetCallbackChannel<IEAServiceCallback>();
-            var endpoint =
-                (RemoteEndpointMessageProperty) currentContext.IncomingMessageProperties[
-                    RemoteEndpointMessageProperty.Name];
 
-            if (endpoint == null) return;
+            var client = Clients.Find(c => c.Port == clientPort);
 
-            var client = new ConnectedClient
+            if (client == null)
             {
-                Address = endpoint?.Address,
-                Port = endpoint.Port,
-                Callback = callback,
-            };
-
-            if (_clients.Contains(client)) return;
-
-            _clients.Add(client);
+                var channel = CreateChannel(clientPort);
+                client = new ConnectedClient(clientPort, channel) {SessionId = currentContext.SessionId};
+                Clients.Add(client);
+            }
+            else if (client.SessionId == null)
+            {
+                client.SessionId = currentContext.SessionId;
+            }
         }
 
         public void Disconnect()
         {
-            var currentContext = OperationContext.Current;
-            var callback = currentContext.GetCallbackChannel<IEAServiceCallback>();
-            _clients.RemoveAll(c => c.Callback == callback);
+            var sessionId = OperationContext.Current.SessionId;
+            Clients.RemoveAll(c => c.SessionId == sessionId);
+        }
+
+        public void AddPersons(List<Person> updatedPersons)
+        {
+            lock (_locker)
+            {
+                foreach (var person in updatedPersons)
+                {
+                    var p = Persons.FirstOrDefault(p1 => p1.Id == person.Id);
+
+                    if (p == null) Persons.Add(person.Copy());
+                    else if (person.Status == Status.REMOVED) p.Status = Status.REMOVED;
+                }
+            }
         }
 
         #endregion
+
+        #region Collection
 
         public void AddPerson(int id, string name)
         {
@@ -98,9 +111,36 @@ namespace Service.Api
             return Persons.Select(person => person.Name).ToList();
         }
 
+        #endregion
+
         public void Stop()
         {
-            _clients.AsParallel().ForAll(client => client.Callback.Disconnect());
+            Clients.AsParallel().ForAll(client => client.Channel.Disconnect());
+        }
+
+        public void ConnectWithClient(int clientPort)
+        {
+            if (Clients.Any(client => client.Port == clientPort)) return;
+
+            var channel = CreateChannel(clientPort);
+            channel.Connect(Port);
+            Clients.Add(new ConnectedClient(clientPort, channel));
+        }
+
+        public void DisconnectWithAllClients()
+        {
+            Clients.ForEach(client => client.Channel.Disconnect());
+            Clients.Clear();
+        }
+
+        private static IEAService CreateChannel(int port)
+        {
+            var timeSpan = TimeSpan.FromSeconds(15);
+            var clientUrl = $@"http://localhost:{port}/IEAService";
+            var binding = new WSHttpBinding();
+            var factory = new ChannelFactory<IEAService>(binding, clientUrl);
+
+            return factory.CreateChannel();
         }
     }
 }

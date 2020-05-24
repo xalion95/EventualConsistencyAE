@@ -52,9 +52,8 @@
             <Generator>MSBuild:Compile</Generator>
             <SubType>Designer</SubType>
         </ApplicationDefinition>
+        <Compile Include="DrawHelper.cs" />
         <Compile Include="Properties\Annotations.cs" />
-        <Compile Include="Web\Client.cs" />
-        <Compile Include="Web\ClientCollection.cs" />
         <Compile Include="Web\Server.cs" />
         <Page Include="MainWindow.xaml">
             <Generator>MSBuild:Compile</Generator>

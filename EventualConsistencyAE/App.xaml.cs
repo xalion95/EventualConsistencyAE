@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using System.Globalization;
+using System.Threading;
+using System.Windows;
 
 namespace EventualConsistencyAE
 {
@@ -9,6 +11,7 @@ namespace EventualConsistencyAE
     {
         private void App_OnStartup(object sender, StartupEventArgs e)
         {
+            Thread.CurrentThread.CurrentUICulture = new CultureInfo("en-us");
             var mainWindow = new MainWindow();
             mainWindow.Show();
         }

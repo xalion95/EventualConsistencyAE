@@ -20,9 +20,8 @@ namespace EventualConsistencyAE.Web
 
         #endregion
 
-        private static readonly object Locker = new object();
+        private readonly object _locker = new object();
         private ServiceHost _serviceHost;
-        public ClientCollection Clients { get; }
 
         public EAService Service { get; }
         public int Port { get; }
@@ -39,18 +38,15 @@ namespace EventualConsistencyAE.Web
             }
         }
 
-        public Server(int port, int serverId)
+        public Server(int port)
         {
             Port = port;
 
-            Clients = new ClientCollection();
-            Clients.ServerSynchronize += Synchronize;
-
-            var binding = new WSDualHttpBinding();
+            var binding = new WSHttpBinding();
             var smb = new ServiceMetadataBehavior {HttpGetEnabled = true};
-            Service = new EAService(serverId);
+            Service = new EAService(port);
 
-            _serviceHost = new ServiceHost(Service, new Uri($@"http://localhost:{Port}"));
+            _serviceHost = new ServiceHost(Service, new Uri($@"http://localhost:{port}"));
             _serviceHost.Description.Behaviors.Add(smb);
             _serviceHost.AddServiceEndpoint(typeof(IEAService), binding, "IEAService");
         }
@@ -59,7 +55,7 @@ namespace EventualConsistencyAE.Web
         {
             var persons = Service.Persons;
 
-            lock (Locker)
+            lock (_locker)
             {
                 foreach (var person in updatedPersons)
                 {
@@ -73,33 +69,31 @@ namespace EventualConsistencyAE.Web
             UpdateList?.Invoke(this, persons);
         }
 
-        public void AddClient(int port)
+        public void AddClient(int clientPort)
         {
-            Clients.AddClient(port);
+            Service.ConnectWithClient(clientPort);
         }
 
         public void Start()
         {
-            if (_serviceHost.State != CommunicationState.Closed)
+            if (_serviceHost.State == CommunicationState.Created)
             {
                 _serviceHost.Open();
-            }
-            else
-            {
-                var binding = new WSDualHttpBinding();
-                var smb = new ServiceMetadataBehavior {HttpGetEnabled = true};
-
-                _serviceHost = new ServiceHost(Service, new Uri($"http://localhost:{Port}"));
-                _serviceHost.Description.Behaviors.Add(smb);
-                _serviceHost.AddServiceEndpoint(typeof(IEAService), binding, "IEAService");
             }
 
             IsRunning = true;
         }
 
+        public void DisconnectWithClient(int clientPort)
+        {
+            foreach (var c in Service.Clients.Where(client => client.Port == clientPort))
+            {
+                c.Channel.Disconnect();
+            }
+        }
+
         public void Stop()
         {
-            Clients.DisconnectAll();
             _serviceHost.Close();
             IsRunning = false;
         }

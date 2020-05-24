@@ -9,7 +9,7 @@
         Title="MainWindow" Height="600" Width="800" MinHeight="350" MinWidth="525"
         Closing="MainWindow_OnClosing">
     <Grid>
-        <TabControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <TabControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SelectionChanged="TabView_OnSelectionChanged" >
             <TabItem Header="Połączenie">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -58,22 +58,11 @@
                     <ListView Grid.Row="2" Grid.Column="1" x:Name="ListViewServerConnections">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="Port" Width="200" DisplayMemberBinding="{Binding ServerPort}" />
-                                <GridViewColumn Header="Akcja" Width="100">
+                                <GridViewColumn Header="Port" Width="200" DisplayMemberBinding="{Binding Port}" />
+                                <GridViewColumn Header="Akcja" Width="150">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Button Width="60" Click="ToggleServer_OnClick">
-                                                <Button.Style>
-                                                    <Style TargetType="{x:Type Button}">
-                                                        <Setter Property="Content" Value="Stop" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsRunning}" Value="False">
-                                                                <Setter Property="Content" Value="Start" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Button.Style>
-                                            </Button>
+                                            <Button Width="Auto" Click="ToggleServer_OnClick" Content="Zamknij połączenie" Padding="5 0 5 0" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
@@ -81,6 +70,9 @@
                         </ListView.View>
                     </ListView>
                 </Grid>
+            </TabItem>
+            <TabItem x:Name="ConnectionMapTabItem" Header="Mapa połączeń">
+                <Canvas x:Name="ConnectionMap" />
             </TabItem>
             <TabItem Header="Dane">
                 <Grid>
