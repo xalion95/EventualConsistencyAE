@@ -30,19 +30,18 @@ namespace EventualConsistencyAE
                 {
                     if (i == j || servers[j].Service.Clients.All(client => client.Port != server.Port)) continue;
 
-                    var line = new Line
-                    {
-                        X1 = Math.Sin(i * angle) * centerX * 0.9 + centerX,
-                        Y1 = -Math.Cos(i * angle) * centerY * 0.9 + centerY,
-                        X2 = Math.Sin(j * angle) * centerX * 0.9 + centerX,
-                        Y2 = -Math.Cos(j * angle) * centerY * 0.9 + centerY,
-                        Stroke = Brushes.Black,
-                        StrokeThickness = 1,
-                    };
+                    var v1 = new Vector(Math.Sin(i * angle) * centerX * 0.9 + centerX,
+                        -Math.Cos(i * angle) * centerY * 0.9 + centerY);
+                    var v2 = new Vector(Math.Sin(j * angle) * centerX * 0.9 + centerX,
+                        -Math.Cos(j * angle) * centerY * 0.9 + centerY);
 
-                    Canvas.SetZIndex(line, 1);
+                    var center = new Vector(centerX, centerY);
+                    var a = GetAngleBetweenVectors(v1 - center, v2 - center);
+                    var curve = GetBezier(VectorToPoint(v1), GetBezierPoint(v1, v2, a), VectorToPoint(v2));
 
-                    canvas.Children.Add(line);
+                    Canvas.SetZIndex(curve, 1);
+
+                    canvas.Children.Add(curve);
                 }
 
                 var circle = new Ellipse
@@ -71,6 +70,43 @@ namespace EventualConsistencyAE
                 Canvas.SetZIndex(text, 3);
                 canvas.Children.Add(text);
             }
+        }
+
+        private static Path GetBezier(Point p1, Point p2, Point p3)
+        {
+            var curve = new QuadraticBezierSegment(p2, p3, true);
+            var path = new PathGeometry();
+            var pathFigure = new PathFigure
+            {
+                StartPoint = p1,
+                IsClosed = false
+            };
+            pathFigure.Segments.Add(curve);
+            path.Figures.Add(pathFigure);
+
+            return new Path
+            {
+                Stroke = Brushes.Black,
+                StrokeThickness = 1,
+                Data = path
+            };
+        }
+
+        private static double GetAngleBetweenVectors(Vector v1, Vector v2)
+        {
+            return Math.Atan2(v2.Y - v1.Y, v2.X - v1.X);
+        }
+
+        private static Point GetBezierPoint(Vector p1, Vector p2, double angle)
+        {
+            var center = (p1 + p2) * 0.5;
+
+            return new Point(center.X + 50.0 * Math.Sin(angle), center.Y + 50.0 * Math.Cos(angle));
+        }
+
+        private static Point VectorToPoint(Vector v)
+        {
+            return new Point(v.X, v.Y);
         }
     }
 }
