@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using EventualConsistencyAE.Web;
-using Service.Model;
+
+// ReSharper disable AccessToStaticMemberViaDerivedType
 
 namespace EventualConsistencyAE
 {
@@ -27,10 +26,23 @@ namespace EventualConsistencyAE
             {
                 var server = servers[i];
 
-                var text = new Label {Content = server.Port};
-                Canvas.SetTop(text, -Math.Cos(i * angle) * centerY * 0.9 + centerY);
-                Canvas.SetLeft(text, Math.Sin(i * angle) * centerX * 0.9 + centerX);
-                canvas.Children.Add(text);
+                for (var j = 0; j < servers.Count; j++)
+                {
+                    if (i == j || servers[j].Service.Clients.All(client => client.Port != server.Port)) continue;
+
+                    var v1 = new Vector(Math.Sin(i * angle) * centerX * 0.9 + centerX,
+                        -Math.Cos(i * angle) * centerY * 0.9 + centerY);
+                    var v2 = new Vector(Math.Sin(j * angle) * centerX * 0.9 + centerX,
+                        -Math.Cos(j * angle) * centerY * 0.9 + centerY);
+
+                    var center = new Vector(centerX, centerY);
+                    var a = GetAngleBetweenVectors(v1 - center, v2 - center);
+                    var curve = GetBezier(VectorToPoint(v1), GetBezierPoint(v1, v2, a), VectorToPoint(v2));
+
+                    Canvas.SetZIndex(curve, 1);
+
+                    canvas.Children.Add(curve);
+                }
 
                 var circle = new Ellipse
                 {
@@ -38,42 +50,63 @@ namespace EventualConsistencyAE
                     Height = 50,
                     StrokeThickness = 1,
                     Stroke = Brushes.Black,
-                    Fill = Brushes.Transparent
+                    Fill = Brushes.White
                 };
-                Canvas.SetTop(circle, -Math.Cos(i * angle) * centerY * 0.9 + centerY);
-                Canvas.SetLeft(circle, Math.Sin(i * angle) * centerX * 0.9 + centerX);
+                Canvas.SetTop(circle, -Math.Cos(i * angle) * centerY * 0.9 + centerY - 25);
+                Canvas.SetLeft(circle, Math.Sin(i * angle) * centerX * 0.9 + centerX - 25);
+                Canvas.SetZIndex(circle, 2);
                 canvas.Children.Add(circle);
 
-                for (var j = 0; j < servers.Count; j++)
+                var text = new Label
                 {
-                    if (i == j || servers[j].Service.Clients.All(client => client.Port != server.Port)) continue;
-
-                    var line = new Line
-                    {
-                        X1 = Math.Sin(i * angle) * centerX * 0.9 + centerX,
-                        Y1 = -Math.Cos(i * angle) * centerY * 0.9 + centerY,
-                        X2 = Math.Sin(j * angle) * centerX * 0.9 + centerX,
-                        Y2 = -Math.Cos(j * angle) * centerY * 0.9 + centerY,
-                        Stroke = Brushes.Black,
-                        StrokeThickness = 1
-                    };
-
-                    canvas.Children.Add(line);
-                }
+                    Content = server.Port,
+                    Width = 50,
+                    Height = 50,
+                    HorizontalContentAlignment = HorizontalAlignment.Center,
+                    VerticalContentAlignment = VerticalAlignment.Center
+                };
+                Canvas.SetTop(text, -Math.Cos(i * angle) * centerY * 0.9 + centerY - 25);
+                Canvas.SetLeft(text, Math.Sin(i * angle) * centerX * 0.9 + centerX - 25);
+                Canvas.SetZIndex(text, 3);
+                canvas.Children.Add(text);
             }
         }
 
-        private static Size GetTextSize(Label label)
+        private static Path GetBezier(Point p1, Point p2, Point p3)
         {
-            var formattedText = new FormattedText((string) label.Content,
-                CultureInfo.CurrentCulture,
-                label.FlowDirection,
-                new Typeface(label.FontFamily, label.FontStyle, label.FontWeight, label.FontStretch),
-                label.FontSize,
-                Brushes.Black,
-                1);
+            var curve = new QuadraticBezierSegment(p2, p3, true);
+            var path = new PathGeometry();
+            var pathFigure = new PathFigure
+            {
+                StartPoint = p1,
+                IsClosed = false
+            };
+            pathFigure.Segments.Add(curve);
+            path.Figures.Add(pathFigure);
 
-            return new Size(formattedText.Width, formattedText.Height);
+            return new Path
+            {
+                Stroke = Brushes.Black,
+                StrokeThickness = 1,
+                Data = path
+            };
+        }
+
+        private static double GetAngleBetweenVectors(Vector v1, Vector v2)
+        {
+            return Math.Atan2(v2.Y - v1.Y, v2.X - v1.X);
+        }
+
+        private static Point GetBezierPoint(Vector p1, Vector p2, double angle)
+        {
+            var center = (p1 + p2) * 0.5;
+
+            return new Point(center.X + 50.0 * Math.Sin(angle), center.Y + 50.0 * Math.Cos(angle));
+        }
+
+        private static Point VectorToPoint(Vector v)
+        {
+            return new Point(v.X, v.Y);
         }
     }
 }
