@@ -1,14 +1,19 @@
-﻿using System.ServiceModel;
+﻿using System.Collections.Generic;
+using System.ServiceModel;
+using Service.Model;
 
 namespace Service.Api
 {
-    [ServiceContract(CallbackContract = typeof(IEAServiceCallback))]
+    [ServiceContract]
     public interface IEAService
     {
-        [OperationContract]
-        void Connect();
+        [OperationContract(IsOneWay = true)]
+        void Connect(int clientPort);
 
         [OperationContract(IsOneWay = true)]
         void Disconnect();
+
+        [OperationContract(IsOneWay = true)]
+        void AddPersons(List<Person> persons);
     }
 }

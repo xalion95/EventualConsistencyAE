@@ -22,7 +22,6 @@ namespace EventualConsistencyAE.Web
 
         private static readonly object Locker = new object();
         private ServiceHost _serviceHost;
-        public ClientCollection Clients { get; }
 
         public EAService Service { get; }
         public int Port { get; }
@@ -32,25 +31,22 @@ namespace EventualConsistencyAE.Web
         public bool IsRunning
         {
             get => _isRunning;
-            set
+            private set
             {
                 _isRunning = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsRunning)));
             }
         }
 
-        public Server(int port, int serverId)
+        public Server(int port)
         {
             Port = port;
 
-            Clients = new ClientCollection();
-            Clients.ServerSynchronize += Synchronize;
-
             var binding = new WSDualHttpBinding();
             var smb = new ServiceMetadataBehavior {HttpGetEnabled = true};
-            Service = new EAService(serverId);
+            Service = new EAService(port);
 
-            _serviceHost = new ServiceHost(Service, new Uri($@"http://localhost:{Port}"));
+            _serviceHost = new ServiceHost(Service, new Uri($@"http://localhost:{port}"));
             _serviceHost.Description.Behaviors.Add(smb);
             _serviceHost.AddServiceEndpoint(typeof(IEAService), binding, "IEAService");
         }
@@ -73,9 +69,9 @@ namespace EventualConsistencyAE.Web
             UpdateList?.Invoke(this, persons);
         }
 
-        public void AddClient(int port)
+        public void AddClient(int clientPort)
         {
-            Clients.AddClient(port);
+            Service.ConnectWithClient(clientPort);
         }
 
         public void Start()
@@ -92,6 +88,7 @@ namespace EventualConsistencyAE.Web
                 _serviceHost = new ServiceHost(Service, new Uri($"http://localhost:{Port}"));
                 _serviceHost.Description.Behaviors.Add(smb);
                 _serviceHost.AddServiceEndpoint(typeof(IEAService), binding, "IEAService");
+                _serviceHost.Open();
             }
 
             IsRunning = true;
@@ -99,7 +96,7 @@ namespace EventualConsistencyAE.Web
 
         public void Stop()
         {
-            Clients.DisconnectAll();
+            Service.Clients.ForEach(client => client.Channel.Disconnect());
             _serviceHost.Close();
             IsRunning = false;
         }

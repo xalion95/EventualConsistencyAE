@@ -23,7 +23,7 @@ namespace EventualConsistencyAE
 
             for (var i = 0; i < 11; i++)
             {
-                var server = new Server(i + 60_000, i);
+                var server = new Server(i + 60_000);
                 server.UpdateList += UpdateList;
                 _servers.Add(server);
 
@@ -43,7 +43,7 @@ namespace EventualConsistencyAE
 
         private void StartServers_OnClick(object sender, RoutedEventArgs e)
         {
-            _servers.ForEach(server => server.Start());
+            _servers.Where(server => !server.IsRunning).ToList().ForEach(server => server.Start());
         }
 
         private void Connect_OnClick(object sender, RoutedEventArgs e)
@@ -55,8 +55,6 @@ namespace EventualConsistencyAE
                 {
                     server.AddClient(clientServer.Port);
                 }
-
-                server.Clients?.ConnectWithAll();
             }
         }
 
@@ -74,9 +72,7 @@ namespace EventualConsistencyAE
 
         private void MainWindow_OnClosing(object sender, CancelEventArgs e)
         {
-            Parallel.ForEach(_servers,
-                new ParallelOptions {MaxDegreeOfParallelism = 32},
-                server => server.Stop());
+            Parallel.ForEach(_servers, new ParallelOptions {MaxDegreeOfParallelism = 32}, server => server.Stop());
         }
 
         private void DeletePerson_OnClick(object sender, RoutedEventArgs e)
@@ -112,7 +108,7 @@ namespace EventualConsistencyAE
 
             ListViewServerConnections.Items.Clear();
 
-            foreach (var serverClient in server.Clients)
+            foreach (var serverClient in server.Service.Clients)
             {
                 ListViewServerConnections.Items.Add(serverClient);
             }
