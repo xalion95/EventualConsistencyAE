@@ -65,6 +65,16 @@ namespace EventualConsistencyAE
         {
             _servers.Where(server => !server.IsRunning).ToList().ForEach(server => server.Start());
         }
+        
+        private void DisconnectServers_OnClick(object sender, RoutedEventArgs e)
+        {
+            _servers.Where(server => server.IsRunning).ToList().ForEach(server =>
+            {
+                server.IsRunning = false;
+                server.Service.DisconnectWithAllClients();
+                ListViewServerConnections.Items.Clear();
+            });
+        }
 
         private void Connect_OnClick(object sender, RoutedEventArgs e)
         {

@@ -24,6 +24,7 @@
 
                     <StackPanel Orientation="Horizontal">
                         <Button Click="StartServers_OnClick" Content="Włącz serwery" HorizontalAlignment="Left" Width="Auto" Margin="10, 10, 0, 0" Padding="5, 0, 5, 0" />
+                        <Button Click="DisconnectServers_OnClick" Content="Wyłącz serwery" HorizontalAlignment="Left" Width="Auto" Margin="10, 10, 0, 0" Padding="5, 0, 5, 0" />
                         <Button Click="Connect_OnClick" Content="Połącz ze sobą serwery" HorizontalAlignment="Left" Width="Auto" Margin="10, 10, 0, 0" Padding="5, 0, 5, 0" />
                     </StackPanel>
 

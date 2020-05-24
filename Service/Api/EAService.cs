@@ -32,8 +32,8 @@ namespace Service.Api
                 var updatedPersons = Persons.Where(person => person.Status != Status.SYNCHRONIZED).ToList();
 
                 if (updatedPersons.Count == 0) return;
-
-                Clients.AsParallel().ForAll(client => client.Channel.AddPersons(updatedPersons));
+                
+                Clients[new Random().Next(Clients.Count)].Channel.AddPersons(updatedPersons);
 
                 foreach (var person in updatedPersons.Where(person => person.Status == Status.NEW))
                 {
