@@ -15,7 +15,6 @@ namespace EventualConsistencyAE.Web
 
         #endregion
 
-        private readonly object _locker = new object();
         private ServiceHost _serviceHost;
 
         public EAService Service { get; }
@@ -73,6 +72,7 @@ namespace EventualConsistencyAE.Web
 
         public void Stop()
         {
+            Service.Close();
             _serviceHost.Close();
             IsRunning = false;
         }

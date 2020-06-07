@@ -10,12 +10,13 @@ namespace Service.Api
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single)]
     public class EAService : IEAService
     {
-        private readonly object _locker = new object();
         public List<ConnectedClient> Clients { get; } = new List<ConnectedClient>();
 
         public List<Person> Persons { get; } = new List<Person>();
         public int Port { get; }
         public int PersonCount { get; private set; }
+        public bool IsClosed { get; private set; } = false;
+        private Timer _timer;
 
         public delegate void UpdateListHandler(object sender);
 
@@ -25,25 +26,47 @@ namespace Service.Api
         {
             Port = port;
 
-            var timer = new Timer
+            _timer = new Timer
             {
                 AutoReset = true,
                 Interval = 2 * 1000,
                 Enabled = true
             };
-            timer.Elapsed += (sender, args) =>
+            _timer.Elapsed += (sender, args) =>
             {
-                var response = Clients[new Random().Next(Clients.Count)].Channel.AddPersons(Persons);
+                if (Clients.Count == 0 || IsClosed) return;
 
-                if (response.Count <= 0) return;
+                List<Person> response;
 
-                foreach (var person in response.Where(person => Persons.All(person1 => person1.Id != person.Id)))
+                try
                 {
-                    Persons.Add(person);
-                }
+                    lock (Clients)
+                    {
+                        if (Clients.All(c => c.SessionId == null)) return;
 
-                Persons.Sort((p1, p2) => p1.Id.CompareTo(p2.Id));
-                PersonCount = Persons.Count;
+                        ConnectedClient client;
+                        do
+                        {
+                            client = Clients[new Random().Next(Clients.Count)];
+                        } while (client.SessionId == null);
+
+                        response = client.Channel.AddPersons(Persons);
+                    }
+
+                    if (response.Count <= 0) return;
+
+                    foreach (var person in response.Where(person => Persons.All(person1 => person1.Id != person.Id)))
+                    {
+                        Persons.Add(person);
+                    }
+
+                    Persons.Sort((p1, p2) => p1.Id.CompareTo(p2.Id));
+                    PersonCount = Persons.Count;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("client is closed");
+                }
             };
         }
 
@@ -77,7 +100,7 @@ namespace Service.Api
         {
             var isUpdated = false;
 
-            lock (_locker)
+            lock (Persons)
             {
                 foreach (var person in updatedPersons)
                 {
@@ -117,25 +140,17 @@ namespace Service.Api
             UpdateList?.Invoke(this);
         }
 
-        public List<string> GetPersons()
-        {
-            return Persons.Select(person => person.Name).ToList();
-        }
-
         #endregion
-
-        public void Stop()
-        {
-            Clients.AsParallel().ForAll(client => client.Channel.Disconnect());
-        }
 
         public void ConnectWithClient(int clientPort)
         {
-            if (Clients.Any(client => client.Port == clientPort)) return;
-
             var channel = CreateChannel(clientPort);
             channel.Connect(Port);
-            Clients.Add(new ConnectedClient(clientPort, channel));
+
+            lock (Clients)
+            {
+                Clients.Add(new ConnectedClient(clientPort, channel));
+            }
         }
 
         public void DisconnectWithAllClients()
@@ -146,12 +161,18 @@ namespace Service.Api
 
         private static IEAService CreateChannel(int port)
         {
-            var timeSpan = TimeSpan.FromSeconds(15);
             var clientUrl = $@"http://localhost:{port}/IEAService";
             var binding = new WSHttpBinding();
             var factory = new ChannelFactory<IEAService>(binding, clientUrl);
+            binding.ReceiveTimeout = TimeSpan.FromSeconds(2);
 
             return factory.CreateChannel();
+        }
+
+        public void Close()
+        {
+            IsClosed = true;
+            _timer.Enabled = false;
         }
     }
 }
