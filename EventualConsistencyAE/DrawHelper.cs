@@ -16,7 +16,7 @@ namespace EventualConsistencyAE
         public static void DrawConnectionMap(Canvas canvas, List<Server> servers)
         {
             var centerX = canvas.ActualWidth * 0.5;
-            var centerY = canvas.ActualHeight * 0.5;
+            var centerY = canvas.ActualHeight * 0.5 - 10;
 
             var angle = 2.0 * Math.PI / servers.Count;
 
@@ -37,7 +37,8 @@ namespace EventualConsistencyAE
 
                     var center = new Vector(centerX, centerY);
                     var a = GetAngleBetweenVectors(v1 - center, v2 - center);
-                    var curve = GetBezier(VectorToPoint(v1), GetBezierPoint(v1, v2, a), VectorToPoint(v2));
+
+                    var curve = GetBezier(VectorToPoint(v1), GetBezierPoint(v1, v2, a), VectorToPoint(v2), GetGradient(i, j));
 
                     Canvas.SetZIndex(curve, 1);
 
@@ -46,12 +47,13 @@ namespace EventualConsistencyAE
 
                 var circle = new Ellipse
                 {
-                    Width = 50,
-                    Height = 50,
+                    Width = 60,
+                    Height = 60,
                     StrokeThickness = 1,
                     Stroke = Brushes.Black,
-                    Fill = Brushes.White
+                    Fill = server.IsRunning ? Brushes.Green : Brushes.Red
                 };
+
                 Canvas.SetTop(circle, -Math.Cos(i * angle) * centerY * 0.9 + centerY - 25);
                 Canvas.SetLeft(circle, Math.Sin(i * angle) * centerX * 0.9 + centerX - 25);
                 Canvas.SetZIndex(circle, 2);
@@ -60,11 +62,14 @@ namespace EventualConsistencyAE
                 var text = new Label
                 {
                     Content = server.Port,
-                    Width = 50,
-                    Height = 50,
+                    Foreground = Brushes.White,
+                    FontSize = 16,
+                    Width = 60,
+                    Height = 60,
                     HorizontalContentAlignment = HorizontalAlignment.Center,
                     VerticalContentAlignment = VerticalAlignment.Center
                 };
+
                 Canvas.SetTop(text, -Math.Cos(i * angle) * centerY * 0.9 + centerY - 25);
                 Canvas.SetLeft(text, Math.Sin(i * angle) * centerX * 0.9 + centerX - 25);
                 Canvas.SetZIndex(text, 3);
@@ -72,7 +77,7 @@ namespace EventualConsistencyAE
             }
         }
 
-        private static Path GetBezier(Point p1, Point p2, Point p3)
+        private static Path GetBezier(Point p1, Point p2, Point p3, LinearGradientBrush gradientBrush)
         {
             var curve = new QuadraticBezierSegment(p2, p3, true);
             var path = new PathGeometry();
@@ -86,8 +91,8 @@ namespace EventualConsistencyAE
 
             return new Path
             {
-                Stroke = Brushes.Black,
-                StrokeThickness = 1,
+                Stroke = gradientBrush,
+                StrokeThickness = 1.5,
                 Data = path
             };
         }
@@ -107,6 +112,24 @@ namespace EventualConsistencyAE
         private static Point VectorToPoint(Vector v)
         {
             return new Point(v.X, v.Y);
+        }
+
+        private static LinearGradientBrush GetGradient(int i, int j)
+        {
+            LinearGradientBrush linearGradientBrush = new LinearGradientBrush();
+
+            if (j <= i)
+            {
+                linearGradientBrush.GradientStops.Add(new GradientStop(Colors.Red, 0.0));
+                linearGradientBrush.GradientStops.Add(new GradientStop(Colors.Blue, 1.0));
+            }
+            else
+            {
+                linearGradientBrush.GradientStops.Add(new GradientStop(Colors.Blue, 0.0));
+                linearGradientBrush.GradientStops.Add(new GradientStop(Colors.Red, 1.0));
+            }
+
+            return linearGradientBrush;
         }
     }
 }

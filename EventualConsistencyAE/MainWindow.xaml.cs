@@ -145,7 +145,8 @@ namespace EventualConsistencyAE
 
             var selectedServer = (Server) SelectedServerComboBox.SelectedItem;
 
-            selectedServer.Service.AddPerson(person.Id, person.Name);
+            if (selectedServer.IsRunning)
+                selectedServer.Service.AddPerson(person.Id, person.Name);
         }
 
         private void Servers_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -168,6 +169,16 @@ namespace EventualConsistencyAE
 
             ConnectionMap.Dispatcher?.Invoke(() => DrawHelper.DrawConnectionMap(ConnectionMap, Servers.ToList()),
                 DispatcherPriority.Loaded);
+        }
+
+        private void SelectedServerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var selectedServer = (Server)SelectedServerComboBox.SelectedItem;
+
+            if (!selectedServer.IsRunning)
+                addButton.IsEnabled = false;
+            else
+                addButton.IsEnabled = true;
         }
 
         #endregion
