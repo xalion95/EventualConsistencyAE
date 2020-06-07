@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.ServiceModel;
 using System.ServiceModel.Description;
 using Service.Api;
-using Service.Model;
 
 namespace EventualConsistencyAE.Web
 {
@@ -13,9 +11,6 @@ namespace EventualConsistencyAE.Web
     {
         #region Events
 
-        public delegate void UpdateListHandler(object sender, List<Person> persons);
-
-        public event UpdateListHandler UpdateList;
         public event PropertyChangedEventHandler PropertyChanged;
 
         #endregion
@@ -51,24 +46,6 @@ namespace EventualConsistencyAE.Web
             _serviceHost.AddServiceEndpoint(typeof(IEAService), binding, "IEAService");
         }
 
-        private void Synchronize(object sender, IEnumerable<Person> updatedPersons)
-        {
-            var persons = Service.Persons;
-
-            lock (_locker)
-            {
-                foreach (var person in updatedPersons)
-                {
-                    var p = persons.FirstOrDefault(p1 => p1.Id == person.Id);
-
-                    if (p == null) persons.Add(person.Copy());
-                    else if (person.Status == Status.REMOVED) p.Status = Status.REMOVED;
-                }
-            }
-
-            UpdateList?.Invoke(this, persons);
-        }
-
         public void AddClient(int clientPort)
         {
             Service.ConnectWithClient(clientPort);
@@ -90,6 +67,8 @@ namespace EventualConsistencyAE.Web
             {
                 c.Channel.Disconnect();
             }
+
+            Service.Clients.RemoveAll(client => client.Port == clientPort);
         }
 
         public void Stop()

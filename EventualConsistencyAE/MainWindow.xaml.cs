@@ -19,21 +19,26 @@ namespace EventualConsistencyAE
     public partial class MainWindow
     {
         public ObservableCollection<Server> Servers { get; } = new ObservableCollection<Server>();
-        public Server SelectedServer { get; set; }
-        
+
         public MainWindow()
         {
             InitializeComponent();
-            
+
             DataContext = this;
 
             for (var i = 0; i < 11; i++)
             {
                 var server = new Server(i + 60_000);
-                server.UpdateList += UpdateList;
+                server.Service.UpdateList += UpdateList;
                 Servers.Add(server);
 
                 ListViewServers.Items.Add(server);
+
+                GridViewPersonData.Columns.Add(new GridViewColumn
+                {
+                    Header = $"Server {i + 60_000}",
+                    Width = 125
+                });
             }
         }
 
@@ -66,11 +71,20 @@ namespace EventualConsistencyAE
             }
         }
 
+        private void CloseConnection_OnClick(object sender, RoutedEventArgs e)
+        {
+            var client = (ConnectedClient) ((Button) sender).DataContext;
+            var server = (Server) ListViewServers.SelectedItem;
+
+            server.DisconnectWithClient(client.Port);
+            ListViewServerConnections.Items.Remove(client);
+        }
+
         private void StartServers_OnClick(object sender, RoutedEventArgs e)
         {
             Servers.Where(server => !server.IsRunning).ToList().ForEach(server => server.Start());
         }
-        
+
         private void DisconnectServers_OnClick(object sender, RoutedEventArgs e)
         {
             Servers.Where(server => server.IsRunning).ToList().ForEach(server =>
@@ -93,35 +107,16 @@ namespace EventualConsistencyAE
             }
         }
 
-        private void UpdateList(object sender, List<Person> persons)
+        private void UpdateList(object sender)
         {
             var data = ListViewPersonData.Items;
 
             data.Clear();
-
-            // foreach (var perStartServers_OnClick(person => person.Status != Status.REMOVED))
-            // {
-            //     data.Add(person);
-            // }
         }
 
         private void MainWindow_OnClosing(object sender, CancelEventArgs e)
         {
             Parallel.ForEach(Servers, new ParallelOptions {MaxDegreeOfParallelism = 32}, server => server.Stop());
-        }
-
-        private void DeletePerson_OnClick(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // var person = (Person) ((Button) sender).DataContext;
-                // ListViewPersonData.Items.Remove(person);
-                // _server.Service.RemovePerson(person.Id);
-            }
-            catch (Exception)
-            {
-                // ignored
-            }
         }
 
         private void AddPersonButton_OnClick(object sender, RoutedEventArgs e)
@@ -130,9 +125,11 @@ namespace EventualConsistencyAE
             {
                 Id = int.Parse(IdField.Text),
                 Name = NameField.Text
-            };         
-            
-            SelectedServer.Service.AddPerson(person.Id, person.Name);
+            };
+
+            var selectedServer = (Server) SelectedServerComboBox.SelectedItem;
+
+            selectedServer.Service.AddPerson(person.Id, person.Name);
             ListViewPersonData.Items.Add(person);
         }
 
@@ -159,10 +156,5 @@ namespace EventualConsistencyAE
         }
 
         #endregion
-
-        private void SelectedServerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-
-        }
     }
 }

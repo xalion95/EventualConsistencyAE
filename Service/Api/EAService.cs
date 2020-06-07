@@ -16,6 +16,9 @@ namespace Service.Api
         public List<Person> Persons { get; } = new List<Person>();
         public int Port { get; }
 
+        public delegate void UpdateListHandler(object sender);
+
+        public event UpdateListHandler UpdateList;
 
         public EAService(int port)
         {
@@ -25,22 +28,20 @@ namespace Service.Api
             {
                 AutoReset = true,
                 Interval = 5 * 1000,
-                // Enabled = true
+                Enabled = true
             };
             timer.Elapsed += (sender, args) =>
             {
                 var updatedPersons = Persons.Where(person => person.Status != Status.SYNCHRONIZED).ToList();
 
                 if (updatedPersons.Count == 0) return;
-                
+
                 Clients[new Random().Next(Clients.Count)].Channel.AddPersons(updatedPersons);
 
                 foreach (var person in updatedPersons.Where(person => person.Status == Status.NEW))
                 {
                     person.Status = Status.SYNCHRONIZED;
                 }
-
-                Persons.RemoveAll(person => person.Status == Status.REMOVED);
             };
         }
 
@@ -72,14 +73,23 @@ namespace Service.Api
 
         public void AddPersons(List<Person> updatedPersons)
         {
+            var isUpdated = false;
+
             lock (_locker)
             {
                 foreach (var person in updatedPersons)
                 {
                     var p = Persons.FirstOrDefault(p1 => p1.Id == person.Id);
 
-                    if (p == null) Persons.Add(person.Copy());
-                    else if (person.Status == Status.REMOVED) p.Status = Status.REMOVED;
+                    if (p != null) continue;
+
+                    Persons.Add(person.Copy());
+                    isUpdated = true;
+                }
+
+                if (isUpdated)
+                {
+                    UpdateList?.Invoke(this);
                 }
             }
         }
@@ -96,14 +106,6 @@ namespace Service.Api
                 Name = name,
                 Status = Status.NEW
             });
-        }
-
-        public void RemovePerson(int id)
-        {
-            foreach (var person in Persons.Where(person => person.Id == id))
-            {
-                person.Status = Status.REMOVED;
-            }
         }
 
         public List<string> GetPersons()

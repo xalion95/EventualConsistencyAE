@@ -2,6 +2,6 @@
 {
     public enum Status
     {
-        NEW, REMOVED, SYNCHRONIZED
+        NEW, SYNCHRONIZED
     }
 }
