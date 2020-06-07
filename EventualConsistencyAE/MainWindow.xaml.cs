@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Threading;
 using EventualConsistencyAE.Web;
 using Service.Model;
@@ -18,9 +19,8 @@ namespace EventualConsistencyAE
     public partial class MainWindow
     {
         public ObservableCollection<Server> Servers { get; } = new ObservableCollection<Server>();
+        public Server SelectedServer { get; set; }
         
-        public Server SelectedServer { get; } = null;
-
         public MainWindow()
         {
             InitializeComponent();
@@ -130,7 +130,8 @@ namespace EventualConsistencyAE
             {
                 Id = int.Parse(IdField.Text),
                 Name = NameField.Text
-            };
+            };         
+            
             SelectedServer.Service.AddPerson(person.Id, person.Name);
             ListViewPersonData.Items.Add(person);
         }
@@ -158,5 +159,10 @@ namespace EventualConsistencyAE
         }
 
         #endregion
+
+        private void SelectedServerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
     }
 }
