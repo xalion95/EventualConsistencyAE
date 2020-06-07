@@ -13,7 +13,7 @@ namespace Service.Api
         [OperationContract(IsOneWay = true)]
         void Disconnect();
 
-        [OperationContract(IsOneWay = true)]
-        void AddPersons(List<Person> persons);
+        [OperationContract]
+        List<Person> AddPersons(List<Person> persons);
     }
 }

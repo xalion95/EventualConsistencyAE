@@ -15,6 +15,7 @@ namespace Service.Api
 
         public List<Person> Persons { get; } = new List<Person>();
         public int Port { get; }
+        public int PersonCount { get; private set; }
 
         public delegate void UpdateListHandler(object sender);
 
@@ -27,21 +28,22 @@ namespace Service.Api
             var timer = new Timer
             {
                 AutoReset = true,
-                Interval = 5 * 1000,
+                Interval = 2 * 1000,
                 Enabled = true
             };
             timer.Elapsed += (sender, args) =>
             {
-                var updatedPersons = Persons.Where(person => person.Status != Status.SYNCHRONIZED).ToList();
+                var response = Clients[new Random().Next(Clients.Count)].Channel.AddPersons(Persons);
 
-                if (updatedPersons.Count == 0) return;
+                if (response.Count <= 0) return;
 
-                Clients[new Random().Next(Clients.Count)].Channel.AddPersons(updatedPersons);
-
-                foreach (var person in updatedPersons.Where(person => person.Status == Status.NEW))
+                foreach (var person in response.Where(person => Persons.All(person1 => person1.Id != person.Id)))
                 {
-                    person.Status = Status.SYNCHRONIZED;
+                    Persons.Add(person);
                 }
+
+                Persons.Sort((p1, p2) => p1.Id.CompareTo(p2.Id));
+                PersonCount = Persons.Count;
             };
         }
 
@@ -71,7 +73,7 @@ namespace Service.Api
             Clients.RemoveAll(c => c.SessionId == sessionId);
         }
 
-        public void AddPersons(List<Person> updatedPersons)
+        public List<Person> AddPersons(List<Person> updatedPersons)
         {
             var isUpdated = false;
 
@@ -89,9 +91,13 @@ namespace Service.Api
 
                 if (isUpdated)
                 {
+                    Persons.Sort((p1, p2) => p1.Id.CompareTo(p2.Id));
+                    PersonCount = Persons.Count;
                     UpdateList?.Invoke(this);
                 }
             }
+
+            return Persons.Where(person => updatedPersons.Any(person1 => person1.Id == person.Id)).ToList();
         }
 
         #endregion
@@ -103,9 +109,12 @@ namespace Service.Api
             Persons.Add(new Person
             {
                 Id = id,
-                Name = name,
-                Status = Status.NEW
+                Name = name
             });
+
+            Persons.Sort((p1, p2) => p1.Id.CompareTo(p2.Id));
+            PersonCount = Persons.Count;
+            UpdateList?.Invoke(this);
         }
 
         public List<string> GetPersons()

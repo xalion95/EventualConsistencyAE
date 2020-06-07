@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -37,6 +37,7 @@ namespace EventualConsistencyAE
                 GridViewPersonData.Columns.Add(new GridViewColumn
                 {
                     Header = $"Server {i + 60_000}",
+                    DisplayMemberBinding = new Binding($"[{i}]"),
                     Width = 125
                 });
             }
@@ -109,9 +110,24 @@ namespace EventualConsistencyAE
 
         private void UpdateList(object sender)
         {
-            var data = ListViewPersonData.Items;
+            ListViewPersonData.Items.Clear();
 
-            data.Clear();
+            for (var i = 0; i < Servers.Max(server => server.Service.PersonCount); i++)
+            {
+                var row = new string[Servers.Count];
+
+                for (var j = 0; j < Servers.Count; j++)
+                {
+                    var server = Servers[j];
+
+                    if (i >= server.Service.PersonCount) continue;
+
+                    var person = server.Service.Persons[i];
+                    row[j] = person.Id + " - " + person.Name;
+                }
+
+                ListViewPersonData.Items.Add(row);
+            }
         }
 
         private void MainWindow_OnClosing(object sender, CancelEventArgs e)
@@ -130,7 +146,6 @@ namespace EventualConsistencyAE
             var selectedServer = (Server) SelectedServerComboBox.SelectedItem;
 
             selectedServer.Service.AddPerson(person.Id, person.Name);
-            ListViewPersonData.Items.Add(person);
         }
 
         private void Servers_OnSelectionChanged(object sender, SelectionChangedEventArgs e)

@@ -68,7 +68,6 @@
         <Compile Include="Api\IEAService.cs" />
         <Compile Include="Model\ConnectedClient.cs" />
         <Compile Include="Model\Person.cs" />
-        <Compile Include="Model\Status.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
     </ItemGroup>
     <ItemGroup>
