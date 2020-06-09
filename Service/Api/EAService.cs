@@ -120,7 +120,7 @@ namespace Service.Api
                 }
             }
 
-            return Persons.Where(person => updatedPersons.Any(person1 => person1.Id == person.Id)).ToList();
+            return Persons.Where(person => updatedPersons.All(person1 => person1.Id != person.Id)).ToList();
         }
 
         #endregion
