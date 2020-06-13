@@ -100,6 +100,7 @@ namespace EventualConsistencyAE
             {
                 server.IsRunning = false;
                 server.Service.DisconnectWithAllClients();
+                server.Service.Clear();
                 ListViewServerConnections.Items.Clear();
             });
         }
