@@ -1,7 +1,9 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -27,7 +29,6 @@ namespace EventualConsistencyAE
             for (var i = 0; i < 11; i++)
             {
                 var server = new Server(i + 60_000);
-                server.Service.UpdateList += UpdateList;
                 Servers.Add(server);
 
                 ListViewServers.Items.Add(server);
@@ -39,6 +40,14 @@ namespace EventualConsistencyAE
                     Width = 125
                 });
             }
+
+            var timer = new Timer
+            {
+                AutoReset = true,
+                Interval = 250,
+                Enabled = true
+            };
+            timer.Elapsed += UpdateList;
         }
 
         #region Events
@@ -66,6 +75,7 @@ namespace EventualConsistencyAE
             {
                 server.IsRunning = false;
                 server.Service.DisconnectWithAllClients();
+                server.Service.Clear();
                 ListViewServerConnections.Items.Clear();
             }
         }
@@ -106,26 +116,30 @@ namespace EventualConsistencyAE
             }
         }
 
-        private void UpdateList(object sender)
+        private void UpdateList(object sender, ElapsedEventArgs e)
         {
-            ListViewPersonData.Items.Clear();
-
-            for (var i = 0; i < Servers.Max(server => server.Service.PersonCount); i++)
+            var items = ListViewPersonData.Items;
+            items.Dispatcher?.Invoke(() =>
             {
-                var row = new string[Servers.Count];
+                items.Clear();
 
-                for (var j = 0; j < Servers.Count; j++)
+                for (var i = 0; i < Servers.Max(server => server.Service.PersonCount); i++)
                 {
-                    var server = Servers[j];
+                    var row = new string[Servers.Count];
 
-                    if (i >= server.Service.PersonCount) continue;
+                    for (var j = 0; j < Servers.Count; j++)
+                    {
+                        var server = Servers[j];
 
-                    var person = server.Service.Persons[i];
-                    row[j] = person.Id + " - " + person.Name;
+                        if (i >= server.Service.PersonCount) continue;
+
+                        var person = server.Service.Persons[i];
+                        row[j] = person.Id + " - " + person.Name;
+                    }
+
+                    items.Add(row);
                 }
-
-                ListViewPersonData.Items.Add(row);
-            }
+            });
         }
 
         private void MainWindow_OnClosing(object sender, CancelEventArgs e)
@@ -171,7 +185,7 @@ namespace EventualConsistencyAE
 
         private void SelectedServerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            var selectedServer = (Server)SelectedServerComboBox.SelectedItem;
+            var selectedServer = (Server) SelectedServerComboBox.SelectedItem;
 
             if (!selectedServer.IsRunning)
                 addButton.IsEnabled = false;

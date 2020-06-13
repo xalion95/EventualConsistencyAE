@@ -16,11 +16,7 @@ namespace Service.Api
         public int Port { get; }
         public int PersonCount { get; private set; }
         public bool IsClosed { get; private set; } = false;
-        private Timer _timer;
-
-        public delegate void UpdateListHandler(object sender);
-
-        public event UpdateListHandler UpdateList;
+        private readonly Timer _timer;
 
         public EAService(int port)
         {
@@ -116,7 +112,6 @@ namespace Service.Api
                 {
                     Persons.Sort((p1, p2) => p1.Id.CompareTo(p2.Id));
                     PersonCount = Persons.Count;
-                    UpdateList?.Invoke(this);
                 }
             }
 
@@ -137,7 +132,6 @@ namespace Service.Api
 
             Persons.Sort((p1, p2) => p1.Id.CompareTo(p2.Id));
             PersonCount = Persons.Count;
-            UpdateList?.Invoke(this);
         }
 
         #endregion
@@ -167,6 +161,12 @@ namespace Service.Api
             binding.ReceiveTimeout = TimeSpan.FromSeconds(2);
 
             return factory.CreateChannel();
+        }
+
+        public void Clear()
+        {
+            PersonCount = 0;
+            Persons.Clear();
         }
 
         public void Close()
