@@ -32,10 +32,9 @@ namespace Service.Api
             {
                 if (Clients.Count == 0 || IsClosed) return;
 
-                List<Person> response;
-
                 try
                 {
+                    List<Person> response;
                     lock (Clients)
                     {
                         if (Clients.All(c => c.SessionId == null)) return;
@@ -51,15 +50,24 @@ namespace Service.Api
 
                     if (response.Count <= 0) return;
 
-                    foreach (var person in response.Where(person => Persons.All(person1 => person1.Id != person.Id)))
+                    foreach (var person in response)
                     {
-                        Persons.Add(person);
+                        var p = Persons.FirstOrDefault(p1 => p1.Id == person.Id);
+
+                        if (p == null)
+                        {
+                            Persons.Add(person);
+                        }
+                        else if (p.IsRemoved == false && person.IsRemoved)
+                        {
+                            p.IsRemoved = true;
+                        }
                     }
 
                     Persons.Sort((p1, p2) => p1.Id.CompareTo(p2.Id));
                     PersonCount = Persons.Count;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     Console.WriteLine("client is closed");
                 }
@@ -95,17 +103,25 @@ namespace Service.Api
         public List<Person> AddPersons(List<Person> updatedPersons)
         {
             var isUpdated = false;
+            List<Person> response;
 
             lock (Persons)
             {
+                response = Persons.Except(updatedPersons).ToList();
+
                 foreach (var person in updatedPersons)
                 {
                     var p = Persons.FirstOrDefault(p1 => p1.Id == person.Id);
 
-                    if (p != null) continue;
-
-                    Persons.Add(person.Copy());
-                    isUpdated = true;
+                    if (p == null)
+                    {
+                        Persons.Add(person.Copy());
+                        isUpdated = true;
+                    }
+                    else if (p.IsRemoved == false && person.IsRemoved)
+                    {
+                        p.IsRemoved = true;
+                    }
                 }
 
                 if (isUpdated)
@@ -115,7 +131,7 @@ namespace Service.Api
                 }
             }
 
-            return Persons.Where(person => updatedPersons.All(person1 => person1.Id != person.Id)).ToList();
+            return response;
         }
 
         #endregion
@@ -124,14 +140,29 @@ namespace Service.Api
 
         public void AddPerson(int id, string name)
         {
-            Persons.Add(new Person
+            lock (Persons)
             {
-                Id = id,
-                Name = name
-            });
+                Persons.Add(new Person
+                {
+                    Id = id,
+                    Name = name
+                });
 
-            Persons.Sort((p1, p2) => p1.Id.CompareTo(p2.Id));
-            PersonCount = Persons.Count;
+                Persons.Sort((p1, p2) => p1.Id.CompareTo(p2.Id));
+                PersonCount = Persons.Count;
+            }
+        }
+
+        public void RemovePerson(int id)
+        {
+            lock (Persons)
+            {
+                var person = Persons.FirstOrDefault(p => p.Id == id);
+
+                if (person == null) return;
+
+                person.IsRemoved = true;
+            }
         }
 
         #endregion

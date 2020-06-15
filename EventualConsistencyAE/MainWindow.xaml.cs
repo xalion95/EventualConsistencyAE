@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,6 +6,7 @@ using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 using System.Windows.Threading;
 using EventualConsistencyAE.Web;
 using Service.Model;
@@ -36,8 +36,9 @@ namespace EventualConsistencyAE
                 GridViewPersonData.Columns.Add(new GridViewColumn
                 {
                     Header = $"Server {i + 60_000}",
-                    DisplayMemberBinding = new Binding($"[{i}]"),
-                    Width = 125
+                    //   DisplayMemberBinding = new Binding($"[{i}]"),
+                    Width = 125,
+                    CellTemplate = GetDataTemplate(i)
                 });
             }
 
@@ -126,7 +127,8 @@ namespace EventualConsistencyAE
 
                 for (var i = 0; i < Servers.Max(server => server.Service.PersonCount); i++)
                 {
-                    var row = new string[Servers.Count];
+                    var row = new Person[Servers.Count];
+                    items.Add(row);
 
                     for (var j = 0; j < Servers.Count; j++)
                     {
@@ -135,10 +137,8 @@ namespace EventualConsistencyAE
                         if (i >= server.Service.PersonCount) continue;
 
                         var person = server.Service.Persons[i];
-                        row[j] = person.Id + " - " + person.Name;
+                        row[j] = person;
                     }
-
-                    items.Add(row);
                 }
             });
         }
@@ -160,6 +160,14 @@ namespace EventualConsistencyAE
 
             if (selectedServer.IsRunning)
                 selectedServer.Service.AddPerson(person.Id, person.Name);
+        }
+
+        private void RemovePersonButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            var selectedServer = (Server) SelectedServerRemoveComboBox.SelectedItem;
+
+            if (selectedServer.IsRunning)
+                selectedServer.Service.RemovePerson(int.Parse(IdRemoveField.Text));
         }
 
         private void Servers_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -188,12 +196,24 @@ namespace EventualConsistencyAE
         {
             var selectedServer = (Server) SelectedServerComboBox.SelectedItem;
 
-            if (!selectedServer.IsRunning)
-                addButton.IsEnabled = false;
-            else
-                addButton.IsEnabled = true;
+            AddButton.IsEnabled = selectedServer.IsRunning;
         }
 
         #endregion
+
+        private static DataTemplate GetDataTemplate(int row)
+        {
+            var trigger = new DataTrigger {Binding = new Binding($"[{row}].IsRemoved"), Value = true};
+            trigger.Setters.Add(new Setter(TextBlock.ForegroundProperty, Brushes.Gray));
+
+            var style = new Style {TargetType = typeof(TextBlock)};
+            style.Triggers.Add(trigger);
+
+            var textFactory = new FrameworkElementFactory(typeof(TextBlock));
+            textFactory.SetBinding(TextBlock.TextProperty, new Binding($"[{row}]"));
+            textFactory.SetValue(StyleProperty, style);
+
+            return new DataTemplate {VisualTree = textFactory};
+        }
     }
 }
